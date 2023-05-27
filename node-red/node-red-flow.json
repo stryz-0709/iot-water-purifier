@@ -1,0 +1,191 @@
+[
+    {
+        "id": "704cc6f8d8767acb",
+        "type": "tab",
+        "label": "Water Consumption Monitoring",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "3c119b359761b290",
+        "type": "mqtt in",
+        "z": "704cc6f8d8767acb",
+        "name": "Receive ID",
+        "topic": "water/id",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "30b60d2090bf5eeb",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 220,
+        "y": 240,
+        "wires": [
+            [
+                "88b7e43ebfb59a53",
+                "1972f875a6be4cf2"
+            ]
+        ]
+    },
+    {
+        "id": "a18e805c2de9ebf5",
+        "type": "mqtt in",
+        "z": "704cc6f8d8767acb",
+        "name": "Receive Water Data",
+        "topic": "water/data",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "30b60d2090bf5eeb",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 230,
+        "y": 340,
+        "wires": [
+            [
+                "bbaaa6fd3b70e67b",
+                "0b9be1e16321615a"
+            ]
+        ]
+    },
+    {
+        "id": "88b7e43ebfb59a53",
+        "type": "function",
+        "z": "704cc6f8d8767acb",
+        "name": "Create Table",
+        "func": "var id = msg.payload.id;\n\nif (id !== undefined && id !== 0) {\n    msg.topic = 'water_consumption_' + id;\n    msg.payload = [\n        {\n            query: 'CREATE TABLE IF NOT EXISTS water_consumption_' + id + ' (id INTEGER, value INTEGER, quality TEXT)',\n            params: []\n        }\n    ];\n    return [msg, null];\n}\n\nreturn null;",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 240,
+        "wires": [
+            [
+                "13bc9b760be7aafd"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "bbaaa6fd3b70e67b",
+        "type": "function",
+        "z": "704cc6f8d8767acb",
+        "name": "Insert Water Data",
+        "func": "var id = msg.payload.id;\nvar value = msg.payload.value;\nvar quality = msg.payload.quality;\n\nif (id !== undefined && id !== 0 && value !== undefined && quality !== undefined) {\n    msg.topic = 'water_consumption_' + id;\n    msg.payload = [\n        {\n            query: 'INSERT INTO water_consumption_' + id + ' (id, value, quality) VALUES ($1, $2, $3)',\n            params: [id, value, quality]\n        }\n    ];\n    return msg;\n}\n\nreturn null;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
+        "y": 360,
+        "wires": [
+            [
+                "13bc9b760be7aafd"
+            ]
+        ]
+    },
+    {
+        "id": "13bc9b760be7aafd",
+        "type": "postgres",
+        "z": "704cc6f8d8767acb",
+        "postgresdb": "7623ff5a7010030a",
+        "name": "PostgreSQL",
+        "output": true,
+        "outputs": 1,
+        "x": 650,
+        "y": 300,
+        "wires": [
+            [
+                "c8f6d6ec0b8db124"
+            ]
+        ]
+    },
+    {
+        "id": "1972f875a6be4cf2",
+        "type": "debug",
+        "z": "704cc6f8d8767acb",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 380,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "c8f6d6ec0b8db124",
+        "type": "debug",
+        "z": "704cc6f8d8767acb",
+        "name": "debug 3",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 840,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "0b9be1e16321615a",
+        "type": "debug",
+        "z": "704cc6f8d8767acb",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 400,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "30b60d2090bf5eeb",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "rabbitmq-pub.education.wise-paas.com",
+        "port": "1883",
+        "clientid": "428ff390-744c-489f-969a-21401dd4f5bd",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "7623ff5a7010030a",
+        "type": "postgresdb",
+        "hostname": "10.100.0.86",
+        "port": "5432",
+        "db": "3909196f-74bb-4325-8a0e-a6f70a22c691",
+        "ssl": false
+    }
+]

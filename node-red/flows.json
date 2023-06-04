@@ -1,0 +1,329 @@
+[
+    {
+        "id": "a6a1b314.6e87e",
+        "type": "tab",
+        "label": "Create PostgreSQL Table",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "cf3da0e54ae903f2",
+        "type": "inject",
+        "z": "a6a1b314.6e87e",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 140,
+        "y": 560,
+        "wires": [
+            [
+                "23298d96cc50c885"
+            ]
+        ]
+    },
+    {
+        "id": "2b2df0dfcc185bf7",
+        "type": "postgresql",
+        "z": "a6a1b314.6e87e",
+        "name": "Create USER",
+        "query": "CREATE TABLE snig_schema.user(\n    id BIGSERIAL NOT NULL PRIMARY KEY,\n    first_name VARCHAR(50) NOT NULL,\n    last_name VARCHAR(50) NOT NULL,\n    gender VARCHAR(7) NOT NULL,\n    dob DATE NOT NULL,\n    water_consumption NUMERIC,\n    device_usage NUMERIC DEFAULT 0\n    time TIME,\n);",
+        "postgreSQLConfig": "4f0b16152223578c",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 560,
+        "y": 560,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "aa0fae5db0df292a",
+        "type": "function",
+        "z": "a6a1b314.6e87e",
+        "name": "Set data",
+        "func": "var id = msg.payload.id;\nvar flow = msg.payload.flow;\n\nmsg.params = [id, flow];\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 1,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 320,
+        "wires": [
+            [
+                "c162609574343ed5"
+            ]
+        ]
+    },
+    {
+        "id": "12c51e325f199b70",
+        "type": "mqtt in",
+        "z": "a6a1b314.6e87e",
+        "name": "Receive Water Data",
+        "topic": "water/data",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "30b60d2090bf5eeb",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 150,
+        "y": 320,
+        "wires": [
+            [
+                "baaa5f1dfbcb547c"
+            ]
+        ]
+    },
+    {
+        "id": "e023a8d73e2395a1",
+        "type": "inject",
+        "z": "a6a1b314.6e87e",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 180,
+        "y": 240,
+        "wires": [
+            [
+                "f345f1d387cf6b6a"
+            ]
+        ]
+    },
+    {
+        "id": "cdd06e8a9e3c6207",
+        "type": "postgresql",
+        "z": "a6a1b314.6e87e",
+        "name": "Create WATERINFO",
+        "query": "CREATE TABLE snig_schema.waterinfo(\n    temperature numeric NOT NULL,\n    flow_in numeric NOT NULL,\n    flow_out numeric NOT NULL,\n    pH numeric NOT NULL,\n    quality numeric NOT NULL,\n    update_time time NOT NULL\n);",
+        "postgreSQLConfig": "4f0b16152223578c",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 480,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "56d0732f25a4eb99",
+        "type": "postgresql",
+        "z": "a6a1b314.6e87e",
+        "name": "Update data",
+        "query": "INSERT INTO snig_schema.waterinfo (temperature, flow_in, flow_out, ph, quality, time)\n    VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Ho_Chi_Minh');",
+        "postgreSQLConfig": "4f0b16152223578c",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 550,
+        "y": 380,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "baaa5f1dfbcb547c",
+        "type": "function",
+        "z": "a6a1b314.6e87e",
+        "name": "Set data",
+        "func": "var temperature = msg.payload.temperature;\nvar flow_in = msg.payload.flow_in;\nvar flow_out = msg.payload.flow_out;\nvar ph = msg.payload.ph;\nvar quality = msg.payload.quality;\n\nmsg.params = [temperature, flow_in, flow_out, ph, quality];\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 380,
+        "wires": [
+            [
+                "56d0732f25a4eb99"
+            ]
+        ]
+    },
+    {
+        "id": "c162609574343ed5",
+        "type": "postgresql",
+        "z": "a6a1b314.6e87e",
+        "name": "Update consumption",
+        "query": "UPDATE snig_schema.person\nSET consumption = snig_schema.person.consumption + $2,\n    usage = CASE\n            WHEN $1 = snig_schema.person.id THEN snig_schema.person.usage\n            ELSE snig_schema.person.usage + 1\n            END\nWHERE id = $1;",
+        "postgreSQLConfig": "4f0b16152223578c",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 580,
+        "y": 320,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "3f3189434c888c7f",
+        "type": "mqtt in",
+        "z": "a6a1b314.6e87e",
+        "name": "Receive new user",
+        "topic": "user/register",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "30b60d2090bf5eeb",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 150,
+        "y": 620,
+        "wires": [
+            [
+                "a815539278e87262"
+            ]
+        ]
+    },
+    {
+        "id": "a815539278e87262",
+        "type": "function",
+        "z": "a6a1b314.6e87e",
+        "name": "Set data",
+        "func": "var first_name = msg.payload.first_name;\nvar last_name = msg.payload.last_name;\nvar gender = msg.payload.gender;\nvar dob = msg.payload.dob;\n\nmsg.params = [first_name, last_name, gender, dob];\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 620,
+        "wires": [
+            [
+                "735da2f8042a5d93"
+            ]
+        ]
+    },
+    {
+        "id": "735da2f8042a5d93",
+        "type": "postgresql",
+        "z": "a6a1b314.6e87e",
+        "name": "INSERT USER",
+        "query": "INSERT INTO snig_schema.user (first_name, last_name, gender, dob) VALUE ($1, $2, $3, $4);",
+        "postgreSQLConfig": "4f0b16152223578c",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 560,
+        "y": 620,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "23298d96cc50c885",
+        "type": "postgresql",
+        "z": "a6a1b314.6e87e",
+        "name": "INSERT USER",
+        "query": "INSERT INTO snig_schema.user (first_name, last_name, gender, dob)\n    VALUES ('C', 'Tran', 'Male', '1975-04-30');",
+        "postgreSQLConfig": "4f0b16152223578c",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 360,
+        "y": 500,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "f345f1d387cf6b6a",
+        "type": "postgresql",
+        "z": "a6a1b314.6e87e",
+        "name": "",
+        "query": "INSERT INTO snig_schema.waterinfo (temperature, flow_in, flow_out, ph, quality, update_time)\n    VALUES (0, 0, 0, 0, 0, null);",
+        "postgreSQLConfig": "4f0b16152223578c",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 450,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "4f0b16152223578c",
+        "type": "postgreSQLConfig",
+        "name": "dbConnection",
+        "host": "52.163.226.41",
+        "hostFieldType": "str",
+        "port": "5432",
+        "portFieldType": "num",
+        "database": "e4f1625f-498b-457f-8718-8d8f03cc9ce0",
+        "databaseFieldType": "str",
+        "ssl": "false",
+        "sslFieldType": "bool",
+        "applicationName": "",
+        "applicationNameType": "str",
+        "max": "10",
+        "maxFieldType": "num",
+        "idle": "10000",
+        "idleFieldType": "num",
+        "connectionTimeout": "10000",
+        "connectionTimeoutFieldType": "num",
+        "user": "b1d72ac3-a069-4182-825b-809fe72df8c9",
+        "userFieldType": "str",
+        "password": "JSi3MYRL2gkAt8yYuoUoh9Ssu",
+        "passwordFieldType": "str"
+    },
+    {
+        "id": "30b60d2090bf5eeb",
+        "type": "mqtt-broker",
+        "name": "MQTT Broker",
+        "broker": "rabbitmq-001-pub.sa.wise-paas.com",
+        "port": "1883",
+        "clientid": "428ff390-744c-489f-969a-21401dd4f5bd",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]
